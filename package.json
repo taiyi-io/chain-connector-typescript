@@ -1,0 +1,19 @@
+{
+  "name": "@taiyi-io/chain-sdk",
+  "version": "0.1.0",
+  "description": "Javascript SDK for Taiyi chain",
+  "main": "main.js",
+  "scripts": {
+    "test": "jest --experimental-vm-modules"
+  },
+  "keywords": [
+    "blockchain"
+  ],
+  "author": "Akumas",
+  "license": "MIT",
+  "dependencies": {
+    "@bitauth/libauth": "^1.19.1",
+    "@noble/ed25519": "^1.7.1",
+    "@supercharge/strings": "^2.0.0"
+  }
+}
