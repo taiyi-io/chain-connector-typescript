@@ -18,8 +18,9 @@ const defaultDomainHost = "localhost";
 const signatureMethodEd25519 = "ed25519";
 const headerContentType = "Content-Type";
 const contentTypeJSON = "application/json";
-const pathErrorCode = "error_code";
-const pathErrorMessage = "message";
+const payloadPathErrorCode = "error_code";
+const payloadPathErrorMessage = "message";
+const payloadPathData = "data";
 const keyEncodeMethodEd25519Hex = "ed25519-hex";
 const defaultKeyEncodeMethod = keyEncodeMethodEd25519Hex;
 
@@ -65,11 +66,11 @@ class TaiyiClient {
         return SDKVersion;
     }
 
-    connect(host, port) {
+    async connect(host, port) {
         return this.connectToDomain(host, port, defaultDomainName);
     }
 
-    connectToDomain(host, port, domainName) {
+    async connectToDomain(host, port, domainName) {
         if ('' === host) {
             host = defaultDomainHost;
         }
@@ -100,11 +101,16 @@ class TaiyiClient {
         headers.append(headerNameTimestamp, timestamp);
         headers.append(headerNameSignatureAlgorithm, signagureAlgorithm);
         headers.append(headerNameSignature, signature);
-        const { session, timeout, address } = this.rawRequest('post', '/sessions/', requestData);
+        const { session, timeout, address } = await this.rawRequest('post', '/sessions/', requestData);
         this.sessionID = session;
         this.timeout = timeout;
         this.localIP = address;
         return;
+    }
+
+    async activate(){
+        const url = this.mapToAPI('/sessions/');
+        return this.doRequest(('put', url));
     }
 
     newNonce() {
@@ -118,29 +124,58 @@ class TaiyiClient {
         return btoa(signed);
     }
 
-    rawRequest(method, path, headers, payload) {
+    async rawRequest(method, path, headers, payload) {
         const url = this.mapToAPI(path);
         headers.append(headerContentType, contentTypeJSON);
         var options = {
             method: method,
-            headers: headers,            
+            headers: headers,
         }
-        if (nil !== payload){
+        if (nil !== payload) {
             options.body = JSON.stringify(payload);
         }
         const req = new Request(url, options);
-        return this.fetchResult(req);
+        return this.getResult(req);
     }
 
-    fetchResult(request){
+    async parseResponse(request) {
+        var resp = await fetch(request);
+        if (!resp.ok()) {
+            throw new Error('fetch result failed with status ' + resp.status + ': ' + resp.statusText);
+        }
+        var payload = await resp.json();
+        if (0 != payload[payloadPathErrorCode]) {
+            throw new Error('fetch faile: ' + payload[payloadPathErrorMessage]);
+        }
+        return payload;
+    }
+
+    async getResult(request) {
+        var payload = await this.parseResponse(request);
+        return payload[payloadPathData];
+    }
+
+    async doRequest(method, url){
 
     }
 
-    mapToAPI(path){
+    async doRequestWithPayload(method, url, payload){
+        
+    }
+
+    async fetchResponse(method, url){
+
+    }
+
+    async fetchResponseWithPayload(method, url, payload){
+        
+    }
+
+    mapToAPI(path) {
         return this.apiBase + path;
     }
 
-    mapToDomain(path){
+    mapToDomain(path) {
         return this.apiBase + '/domains/' + this.domain + path;
     }
 }
