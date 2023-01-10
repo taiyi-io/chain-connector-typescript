@@ -138,6 +138,10 @@ class TaiyiClient {
         return this.getResult(req);
     }
 
+    async checkStatus(request){
+        
+    }
+
     async parseResponse(request) {
         var resp = await fetch(request);
         if (!resp.ok()) {
@@ -169,6 +173,10 @@ class TaiyiClient {
 
     async fetchResponseWithPayload(method, url, payload){
         
+    }
+
+    signatureRequest(method, url, payload){
+
     }
 
     mapToAPI(path) {
