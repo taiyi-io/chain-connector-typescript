@@ -1,6 +1,7 @@
 /** @type {import('jest').Config} */
 const config = {
-    transform: {}
+    preset: 'ts-jest',
+    testEnvironment: 'node',
 };
 
 module.exports = config;

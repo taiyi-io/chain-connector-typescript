@@ -102,3 +102,12 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Typescript
+*.tsbuildinfo
+
+# Visual studio
+.vscode
+
+# Access Key
+access_key.json
