@@ -1,9 +1,8 @@
 import ChainProvider from "./chain_provider";
 import { DocumentProperty, PropertyType, ContractDefine, QueryCondition, QueryBuilder } from './chain_sdk';
 
-test('Test Schemas', async () => {
+test('schemas', async () => {
     let conn = await ChainProvider.connect();
-    conn.Trace = true;
     const schemaName = 'js-test-case1-schema';
     console.log('schema test begin...');
     {
@@ -66,14 +65,13 @@ test('Test Schemas', async () => {
     console.log('schema interfaces tested');
 });
 
-test('Test Documents', async () => {
+test('documents', async () => {
     const docCount = 10;
     const propertyNameAge = 'age';
     const propertyNameEnabled = 'enabled';
     const schemaName = 'js-test-case2-document';
     const docPrefix = 'js-test-case2-';
     let conn = await ChainProvider.connect();
-    conn.Trace = true;
     console.log('document test begin...');
     {
         let result = await conn.hasSchema(schemaName);
@@ -187,7 +185,7 @@ test('Test Documents', async () => {
     console.log('document interfaces tested');
 })
 
-test('Test Contracts', async () => {
+test('contracts', async () => {
     const propertyCatalog = "catalog";
     const propertyBalance = "balance";
     const propertyNumber = "number";
@@ -221,7 +219,7 @@ test('Test Contracts', async () => {
         },
     ];
     let conn = await ChainProvider.connect();
-    conn.Trace = true;
+    // conn.Trace = true;
     console.log('contract test begin...');
     {
         let result = await conn.hasSchema(schemaName);
@@ -282,8 +280,19 @@ test('Test Contracts', async () => {
     };
 
     const createContractName = 'contract_create';
+    if (await conn.hasContract(createContractName)){
+        await conn.withdrawContract(createContractName);
+        console.log('previous contract %s removed', createContractName)
+    }
     await conn.deployContract(createContractName, createContract);
+    expect(await conn.hasContract(createContractName)).toBe(true);
+    let define = await conn.getContract(createContractName);
+    console.log("define:\n%s", JSON.stringify(define));
     const deleteContractName = 'contract_delete';
+    if (await conn.hasContract(deleteContractName)){
+        await conn.withdrawContract(deleteContractName);
+        console.log('previous contract %s removed', deleteContractName)
+    }
     await conn.deployContract(deleteContractName, deleteContract);
     const docID = 'contract-doc';
     let parameters: string[] = [
@@ -295,14 +304,24 @@ test('Test Contracts', async () => {
         Math.random() > 0.5 ? 'true' : 'false',
         (Math.random() * 200).toFixed(2),
     ];
-    await conn.enableContractTrace(createContractName);
+    let info = await conn.getContractInfo(createContractName);
+    if (!info.trace){
+        await conn.enableContractTrace(createContractName);
+        console.log('trace enabled');
+    }
+    
     await conn.callContract(createContractName, parameters);
     await conn.callContract(deleteContractName, [schemaName, docID]);
     let { total } = await conn.queryContracts(0, 10);
     console.log(total + ' contracts returned before withdraw');
-    await conn.disableContractTrace(createContractName);
+    if (!info.trace){
+        await conn.disableContractTrace(createContractName);
+        console.log('trace disabled');
+    }
+    
     await conn.withdrawContract(createContractName);
     await conn.withdrawContract(deleteContractName);
+
     total = (await conn.queryContracts(0, 10)).total;
     console.log(total + ' contracts returned after withdraw');
 
@@ -312,9 +331,8 @@ test('Test Contracts', async () => {
     console.log('contract interfaces tested');
 })
 
-test('Test Chain', async () => {
+test('chain', async () => {
     let conn = await ChainProvider.connect();
-    conn.Trace = true;
     console.log('chain test begin...');
     let status = await conn.getStatus();
     console.log('world version ' + status.world_version + ', block height ' + status.block_height);

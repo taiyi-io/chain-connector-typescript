@@ -1,5 +1,12 @@
 # Change Log for Chain SDK
 
+## [0.3.0] - 2023-02-01
+
+### Added
+
+- ChainConnector::hasContract/getContract/getContractInfo
+- Operate timeout
+
 ## [0.2.0] - 2023-01-29
 
 ### Added

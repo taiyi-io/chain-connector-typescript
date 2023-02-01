@@ -1,6 +1,6 @@
 {
   "name": "@taiyi-io/chain-sdk",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Javascript SDK for Taiyi chain",
   "main": "chain_sdk.js",
   "chain": {

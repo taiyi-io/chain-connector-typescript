@@ -4,7 +4,7 @@ import CryptoJS from 'crypto-js';
 import Strings from '@supercharge/strings/dist';
 import * as ed25519 from '@noble/ed25519';
 
-const SDKVersion = '0.2.0';
+const SDKVersion = '0.3.0';
 const APIVersion = '1';
 // const projectName = 'Taiyi';
 const projectName = 'Paimon';
@@ -24,6 +24,7 @@ const payloadPathErrorMessage = "message";
 const payloadPathData = "data";
 const keyEncodeMethodEd25519Hex = 'ed25519-hex';
 const defaultKeyEncodeMethod = keyEncodeMethodEd25519Hex;
+const defaultTimeoutInSeconds = 3;
 
 export enum PropertyType {
     String = "string",
@@ -262,6 +263,8 @@ export interface TransactionRecords {
 
 export interface ContractInfo {
     name: string,
+    parameters?: number,
+    steps?: number,
     version: number,
     modified_time: string,
     enabled: boolean,
@@ -330,6 +333,7 @@ export class ChainConnector {
     #_timeout: number = 0;
     #_localIP: string = '';
     #_trace: boolean = false;
+    #_request_timeout: number = defaultTimeoutInSeconds * 1000;
     constructor(accessID: string, privateKey: Uint8Array) {
         this.#_accessID = accessID;
         this.#_privateKey = privateKey;
@@ -339,6 +343,7 @@ export class ChainConnector {
         this.#_sessionID = '';
         this.#_timeout = 0;
         this.#_localIP = '';
+        this.#_request_timeout = defaultTimeoutInSeconds * 1000;
     }
 
     get Version() {
@@ -359,6 +364,10 @@ export class ChainConnector {
 
     set Trace(flag: boolean) {
         this.#_trace = flag;
+    }
+
+    set Timeout(timeoutInSeconds: number) {
+        this.#_request_timeout = timeoutInSeconds * 1000;
     }
 
     /**
@@ -416,6 +425,8 @@ export class ChainConnector {
         this.#_localIP = address;
         if (this.#_trace) {
             console.log('<Chain-DEBUG> [%s]: new session allocated', this.#_sessionID);
+            console.log('<Chain-DEBUG> [%s]: session timeout in %d second(s)', this.#_sessionID, timeout);
+            console.log('<Chain-DEBUG> [%s]: local address %s', this.#_sessionID, address);
         }
         return;
     }
@@ -791,6 +802,52 @@ export class ChainConnector {
     }
 
     /**
+     * Check if a contract exstis
+     * @param {string} contractName target contract name
+     * @returns  {boolean} true: exists/false: not exists
+     */
+    async hasContract(contractName: string): Promise<boolean> {
+        if (!contractName) {
+            throw new Error('contract name required');
+        }
+        const url = this.#mapToDomain("/contracts/" + contractName);
+        return this.#peekRequest(RequestMethod.HEAD, url);
+    }
+
+    /**
+     * Get define of a contract
+     * @param {string} contractName target contract name
+     * @returns  {ContractInfo} contract info
+     */
+    async getContract(contractName: string): Promise<ContractInfo> {
+        if (!contractName) {
+            throw new Error('contract name required');
+        }
+        const url = this.#mapToDomain("/contracts/" + contractName);
+        interface responsePayload {
+            name: string,
+            content: string,
+        }
+        let resp = await (this.#fetchResponse(RequestMethod.GET, url) as Promise<responsePayload>);
+        let content = resp.content;
+        let define: ContractInfo = JSON.parse(content);
+        return define;
+    }
+
+    /**
+     * Get detail info of a contract
+     * @param {string} contractName target contract name
+     * @returns  {ContractInfo} contract info
+     */
+    async getContractInfo(contractName: string): Promise<ContractInfo> {
+        if (!contractName) {
+            throw new Error('contract name required');
+        }
+        const url = this.#mapToDomain("/contracts/" + contractName + '/info/');
+        return this.#fetchResponse(RequestMethod.GET, url) as Promise<ContractInfo>;
+    }
+
+    /**
      * Deploy a contract define
      * @param {string} contractName contract name
      * @param {ContractDefine} define contract define
@@ -895,9 +952,29 @@ export class ChainConnector {
         return this.#getResult(url, options);
     }
 
+    async #fetchWithTimeout(url: string, options: object): Promise<Response> {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+            controller.abort();
+        }, this.#_request_timeout);
+        let optionsWithSignal = {
+            ...options,
+            signal: controller.signal
+        };
+        let resp: Response;
+        try {
+            resp = await fetch(url, optionsWithSignal);
+        } catch (e) {
+            throw new Error(`request to url ${url} timeout`)
+        } finally {
+            clearTimeout(timeoutId);
+        }
+        return resp;
+    }
+
     async #peekRequest(method: RequestMethod, url: string): Promise<boolean> {
         let options = await this.#prepareOptions(method, url, null);
-        let resp = await fetch(url, options);
+        let resp = await this.#fetchWithTimeout(url, options);
         return resp.ok;
     }
 
@@ -906,7 +983,7 @@ export class ChainConnector {
     }
 
     async #parseResponse(url: string, options: object): Promise<object> {
-        let resp = await fetch(url, options);
+        let resp = await this.#fetchWithTimeout(url, options);
         if (!resp.ok) {
             throw new Error('fetch result failed with status ' + resp.status + ': ' + resp.statusText);
         }
