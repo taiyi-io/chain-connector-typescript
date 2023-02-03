@@ -463,7 +463,7 @@ export class ChainConnector {
      * @returns {BlockRecords} list of block records
      */
     async queryBlocks(beginHeight: number, endHeight: number): Promise<BlockRecords> {
-        if (endHeight <= beginHeight) {
+        if (endHeight < beginHeight) {
             throw new Error("end height " + endHeight + " must greater than begin height " + beginHeight);
         }
         const url = this.#mapToDomain("/blocks/");
