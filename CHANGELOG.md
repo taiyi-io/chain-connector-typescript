@@ -1,5 +1,12 @@
 # Change Log for Chain SDK
 
+## [0.4.0] - 2023-02-03
+
+### Added
+
+- ChainConnector::getSchemaActors/getDocumentActors/getContractActors
+- ChainConnector::updateSchemaActors/updateDocumentActors/updateContractActors
+
 ## [0.3.0] - 2023-02-01
 
 ### Added

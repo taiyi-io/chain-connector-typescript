@@ -4,7 +4,7 @@ import CryptoJS from 'crypto-js';
 import Strings from '@supercharge/strings/dist';
 import * as ed25519 from '@noble/ed25519';
 
-const SDKVersion = '0.3.0';
+const SDKVersion = '0.4.0';
 const APIVersion = '1';
 // const projectName = 'Taiyi';
 const projectName = 'Paimon';
@@ -290,6 +290,15 @@ export interface ContractRecords {
 export interface LogRecords {
     latest_version: number,
     logs?: TraceLog[],
+}
+
+
+export interface ActorPrivileges {
+    group: string,
+    owner: boolean,
+    executor: boolean,
+    updater: boolean,
+    viewer: boolean
 }
 
 interface requestOptions {
@@ -630,6 +639,38 @@ export class ChainConnector {
         return (this.#fetchResponse(RequestMethod.GET, url) as Promise<LogRecords>);
     }
 
+    /**
+     * Get meta actors of a schema 
+     * @param {string} schemaName schema name
+     * @returns {ActorPrivileges[]} list of actor privileges
+     */
+    async getSchemaActors(schemaName: string): Promise<ActorPrivileges[]> {
+        if (!schemaName) {
+            throw new Error('schema name required');
+        }
+        const url = this.#mapToDomain("/schemas/" + schemaName + "/actors/");
+        return (this.#fetchResponse(RequestMethod.GET, url) as Promise<ActorPrivileges[]>);
+    }
+
+    /**
+     * Update meta actors of a schema 
+     * @param {string} schemaName schema name
+     * @param {ActorPrivileges[]} actors list of actor privileges
+     */
+    async updateSchemaActors(schemaName: string, actors: ActorPrivileges[]) {
+        if (!schemaName) {
+            throw new Error('schema name required');
+        }
+        if (!actors || 0 == actors.length) {
+            throw new Error('actors required');
+        }
+        const url = this.#mapToDomain("/schemas/" + schemaName + "/actors/");
+        const payload = {
+            actors: actors
+        };
+        await this.#doRequestWithPayload(RequestMethod.PUT, url, payload);
+    }
+
     //Document Operations
 
     /**
@@ -784,6 +825,40 @@ export class ChainConnector {
         return (this.#fetchResponseWithPayload(RequestMethod.POST, url, condition) as Promise<DocumentRecords>)
     }
 
+    /**
+     * Get meta actors of a document
+     * @param {string} schemaName schema name
+     * @param {string} docID document ID
+     * @returns {ActorPrivileges[]} list of actor privileges
+     */
+    async getDocumentActors(schemaName: string, docID: string): Promise<ActorPrivileges[]> {
+        if (!schemaName) {
+            throw new Error('schema name required');
+        }
+        const url = this.#mapToDomain("/schemas/" + schemaName + "/docs/" + docID + "/actors/");
+        return (this.#fetchResponse(RequestMethod.GET, url) as Promise<ActorPrivileges[]>);
+    }
+
+    /**
+     * Update meta actors of a document 
+     * @param {string} schemaName schema name
+     * @param {string} docID document ID
+     * @param {ActorPrivileges[]} actors list of actor privileges
+     */
+    async updateDocumentActors(schemaName: string, docID: string, actors: ActorPrivileges[]) {
+        if (!schemaName) {
+            throw new Error('schema name required');
+        }
+        if (!actors || 0 == actors.length) {
+            throw new Error('actors required');
+        }
+        const url = this.#mapToDomain("/schemas/" + schemaName + "/docs/" + docID + "/actors/");
+        const payload = {
+            actors: actors
+        };
+        await this.#doRequestWithPayload(RequestMethod.PUT, url, payload);
+    }
+
     //Smart contract operations
 
     /**
@@ -921,6 +996,37 @@ export class ChainConnector {
         await this.#doRequestWithPayload(RequestMethod.PUT, url, payload);
     }
 
+    /**
+     * Get meta actors of a contract 
+     * @param {string} contractName contract name
+     * @returns {ActorPrivileges[]} list of actor privileges
+     */
+    async getContractActors(contractName: string): Promise<ActorPrivileges[]> {
+        if (!contractName) {
+            throw new Error('contract name required');
+        }
+        const url = this.#mapToDomain("/contracts/" + contractName + '/actors/');
+        return (this.#fetchResponse(RequestMethod.GET, url) as Promise<ActorPrivileges[]>);
+    }
+
+    /**
+     * Update meta actors of a contract 
+     * @param {string} contractName contract name
+     * @param {ActorPrivileges[]} actors list of actor privileges
+     */
+    async updateContractActors(contractName: string, actors: ActorPrivileges[]) {
+        if (!contractName) {
+            throw new Error('contract name required');
+        }
+        if (!actors || 0 == actors.length) {
+            throw new Error('actors required');
+        }
+        const url = this.#mapToDomain("/contracts/" + contractName + '/actors/');
+        const payload = {
+            actors: actors
+        };
+        await this.#doRequestWithPayload(RequestMethod.PUT, url, payload);
+    }
 
     //private functions
 
@@ -952,7 +1058,7 @@ export class ChainConnector {
         return this.#getResult(url, options);
     }
 
-    async #fetchWithTimeout(url: string, options: object): Promise<Response> {
+    async #fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
             controller.abort();
@@ -965,7 +1071,12 @@ export class ChainConnector {
         try {
             resp = await fetch(url, optionsWithSignal);
         } catch (e) {
-            throw new Error(`request to url ${url} timeout`)
+            if (e.name === 'AbortError'){
+                throw new Error(`request ${options.method}: ${url} timeout`)
+            }else{
+                throw new Error(`fetch ${options.method}: ${url} failed\n${e.message}`)
+            }
+            
         } finally {
             clearTimeout(timeoutId);
         }

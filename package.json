@@ -1,10 +1,10 @@
 {
   "name": "@taiyi-io/chain-sdk",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Javascript SDK for Taiyi chain",
   "main": "chain_sdk.js",
   "chain": {
-    "host": "192.168.25.223",
+    "host": "192.168.3.47",
     "port": 9100,
     "debug": false
   },

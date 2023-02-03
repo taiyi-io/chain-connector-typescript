@@ -1,5 +1,6 @@
+import { stringify } from "@bitauth/libauth";
 import ChainProvider from "./chain_provider";
-import { DocumentProperty, PropertyType, ContractDefine, QueryCondition, QueryBuilder } from './chain_sdk';
+import { DocumentProperty, PropertyType, ContractDefine, QueryCondition, QueryBuilder, ActorPrivileges } from './chain_sdk';
 
 test('schemas', async () => {
     let conn = await ChainProvider.connect();
@@ -280,7 +281,7 @@ test('contracts', async () => {
     };
 
     const createContractName = 'contract_create';
-    if (await conn.hasContract(createContractName)){
+    if (await conn.hasContract(createContractName)) {
         await conn.withdrawContract(createContractName);
         console.log('previous contract %s removed', createContractName)
     }
@@ -289,7 +290,7 @@ test('contracts', async () => {
     let define = await conn.getContract(createContractName);
     console.log("define:\n%s", JSON.stringify(define));
     const deleteContractName = 'contract_delete';
-    if (await conn.hasContract(deleteContractName)){
+    if (await conn.hasContract(deleteContractName)) {
         await conn.withdrawContract(deleteContractName);
         console.log('previous contract %s removed', deleteContractName)
     }
@@ -305,20 +306,20 @@ test('contracts', async () => {
         (Math.random() * 200).toFixed(2),
     ];
     let info = await conn.getContractInfo(createContractName);
-    if (!info.trace){
+    if (!info.trace) {
         await conn.enableContractTrace(createContractName);
         console.log('trace enabled');
     }
-    
+
     await conn.callContract(createContractName, parameters);
     await conn.callContract(deleteContractName, [schemaName, docID]);
     let { total } = await conn.queryContracts(0, 10);
     console.log(total + ' contracts returned before withdraw');
-    if (!info.trace){
+    if (!info.trace) {
         await conn.disableContractTrace(createContractName);
         console.log('trace disabled');
     }
-    
+
     await conn.withdrawContract(createContractName);
     await conn.withdrawContract(deleteContractName);
 
@@ -366,4 +367,114 @@ test('chain', async () => {
     }
 
     console.log('chain interfaces tested');
+})
+
+test('actors', async () => {
+    let conn = await ChainProvider.connect();
+    const schemaName = 'js-test-case5-actors';
+    console.log('actor test begin...');
+
+    {
+        let result = await conn.hasSchema(schemaName);
+        if (result) {
+            console.log('schema ' + schemaName + ' already exsits');
+            await conn.deleteSchema(schemaName);
+            console.log('previous schema ' + schemaName + ' deleted');
+        }
+    }
+    {
+        let properties: DocumentProperty[] = [
+            {
+                name: 'name',
+                type: PropertyType.String
+            },
+            {
+                name: 'age',
+                type: PropertyType.Integer
+            },
+            {
+                name: 'available',
+                type: PropertyType.Boolean
+            }
+        ];
+        await conn.createSchema(schemaName, properties);
+        let current = await conn.getSchema(schemaName);
+        console.log('test schema created ok:\n' + JSON.stringify(current))
+    }
+    let actors = await conn.getSchemaActors(schemaName);
+    console.log(actors);
+
+    const currentGroup = actors[0].group;
+    const actorConfigure: ActorPrivileges[] = [
+        {
+            group: currentGroup,
+            owner: true,
+            executor: true,
+            updater: true,
+            viewer: true,
+        },
+        {
+            group: 'audit',
+            owner: false,
+            executor: false,
+            updater: false,
+            viewer: true,
+        },
+        {
+            group: 'runner',
+            owner: false,
+            executor: true,
+            updater: true,
+            viewer: true,
+        },
+    ];
+    {
+        //test on schema
+        await conn.updateSchemaActors(schemaName, actorConfigure);
+        actors = await conn.getSchemaActors(schemaName);
+        if (JSON.stringify(actors) !== JSON.stringify(actorConfigure)){
+            throw new Error('actors mismatch on schema');
+        }
+        console.log('update schema actors success, current actors: \n%s', stringify(actors, 2));
+    }
+    {
+        const content = "{'name': 'hello', 'age': 20, 'available': true}";
+        let docID = await conn.addDocument(schemaName, '', content);
+        console.log('test doc %s added', docID);
+        await conn.updateDocumentActors(schemaName, docID, actorConfigure);
+        actors = await conn.getDocumentActors(schemaName, docID);
+        if (JSON.stringify(actors) !== JSON.stringify(actorConfigure)){
+            throw new Error('actors mismatch on document');
+        }
+        console.log('update document actors success');
+    }
+    {
+        let define: ContractDefine = {
+            steps: [
+                {
+                    action: "delete_doc",
+                    params: ["@1", "@2"],
+                },
+                {
+                    action: "submit",
+                },
+            ],
+        };
+        const contractName = schemaName;
+        if (await conn.hasContract(contractName)){
+            await conn.withdrawContract(contractName);
+        }
+        await conn.deployContract(contractName, define);
+        console.log('sample contract deployed');
+        await conn.updateContractActors(contractName, actorConfigure);
+        actors = await conn.getContractActors(contractName);
+        if (JSON.stringify(actors) !== JSON.stringify(actorConfigure)){
+            throw new Error('actors mismatch on contract');
+        }
+        console.log('update contract actors success');
+        await conn.withdrawContract(contractName);
+    }
+    
+    await conn.deleteSchema(schemaName);
+    console.log('actor interfaces test success');
 })
