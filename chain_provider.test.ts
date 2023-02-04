@@ -437,9 +437,13 @@ test('actors', async () => {
         }
         console.log('update schema actors success, current actors: \n%s', stringify(actors, 2));
     }
-    {
-        const content = "{'name': 'hello', 'age': 20, 'available': true}";
-        let docID = await conn.addDocument(schemaName, '', content);
+    {        
+        const content = {
+            name: 'hello',
+            age: 20,
+            available: true,
+        }
+        let docID = await conn.addDocument(schemaName, '', JSON.stringify(content));
         console.log('test doc %s added', docID);
         await conn.updateDocumentActors(schemaName, docID, actorConfigure);
         actors = await conn.getDocumentActors(schemaName, docID);
