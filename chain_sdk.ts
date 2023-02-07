@@ -892,9 +892,9 @@ export class ChainConnector {
     /**
      * Get define of a contract
      * @param {string} contractName target contract name
-     * @returns  {ContractInfo} contract info
+     * @returns  {ContractDefine} contract define
      */
-    async getContract(contractName: string): Promise<ContractInfo> {
+    async getContract(contractName: string): Promise<ContractDefine> {
         if (!contractName) {
             throw new Error('contract name required');
         }
@@ -905,7 +905,7 @@ export class ChainConnector {
         }
         let resp = await (this.#fetchResponse(RequestMethod.GET, url) as Promise<responsePayload>);
         let content = resp.content;
-        let define: ContractInfo = JSON.parse(content);
+        let define: ContractDefine = JSON.parse(content);
         return define;
     }
 

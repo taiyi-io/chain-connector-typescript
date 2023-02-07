@@ -4,7 +4,7 @@
   "description": "Javascript SDK for Taiyi chain",
   "main": "chain_sdk.js",
   "chain": {
-    "host": "192.168.3.47",
+    "host": "192.168.25.223",
     "port": 9100,
     "debug": false
   },
