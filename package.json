@@ -1,10 +1,10 @@
 {
-  "name": "@taiyi-io/chain-sdk",
+  "name": "@taiyi-io/chain-connector",
   "version": "0.4.0",
-  "description": "Javascript SDK for Taiyi chain",
-  "main": "chain_sdk.js",
+  "description": "Chain connector SDK",
+  "main": "chain_connector.ts",
   "chain": {
-    "host": "192.168.25.223",
+    "host": "localhost",
     "port": 9100,
     "debug": false
   },
@@ -21,6 +21,7 @@
     "@bitauth/libauth": "^1.19.1",
     "@noble/ed25519": "^1.7.1",
     "@supercharge/strings": "^2.0.0",
+    "@types/crypto-js": "^4.1.1",
     "crypto-js": "^4.1.1"
   },
   "devDependencies": {

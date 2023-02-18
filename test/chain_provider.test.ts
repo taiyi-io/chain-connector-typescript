@@ -1,6 +1,6 @@
 import { stringify } from "@bitauth/libauth";
 import ChainProvider from "./chain_provider";
-import { DocumentProperty, PropertyType, ContractDefine, QueryCondition, QueryBuilder, ActorPrivileges } from './chain_sdk';
+import { DocumentProperty, PropertyType, ContractDefine, QueryCondition, QueryBuilder, ActorPrivileges } from '../src/chain_connector';
 
 test('schemas', async () => {
     let conn = await ChainProvider.connect();

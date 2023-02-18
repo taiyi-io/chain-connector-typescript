@@ -6,8 +6,7 @@ import * as ed25519 from '@noble/ed25519';
 
 const SDKVersion = '0.4.0';
 const APIVersion = '1';
-// const projectName = 'Taiyi';
-const projectName = 'Paimon';
+const projectName = 'Taiyi';
 const headerNameSession = projectName + '-Session';
 const headerNameTimestamp = projectName + '-Timestamp';
 const headerNameSignature = projectName + '-Signature';
