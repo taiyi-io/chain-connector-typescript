@@ -1,5 +1,15 @@
 # Change Log for Chain SDK
 
+## [0.5.0] - 2023-02-19
+
+### Added
+
+- ChainConnector::setProjectName
+
+### Fixed
+
+- Library not properly exports
+
 ## [0.4.0] - 2023-02-03
 
 ### Added

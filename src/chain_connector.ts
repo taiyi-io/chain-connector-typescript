@@ -4,13 +4,9 @@ import CryptoJS from 'crypto-js';
 import Strings from '@supercharge/strings/dist';
 import * as ed25519 from '@noble/ed25519';
 
-const SDKVersion = '0.4.0';
+const SDKVersion = '0.5.0';
 const APIVersion = '1';
-const projectName = 'Taiyi';
-const headerNameSession = projectName + '-Session';
-const headerNameTimestamp = projectName + '-Timestamp';
-const headerNameSignature = projectName + '-Signature';
-const headerNameSignatureAlgorithm = projectName + '-SignatureAlgorithm';
+const defaultProjectName = 'Taiyi';
 const defaultDomainName = 'system';
 const defaultDomainHost = "localhost";
 
@@ -342,6 +338,12 @@ export class ChainConnector {
     #_localIP: string = '';
     #_trace: boolean = false;
     #_request_timeout: number = defaultTimeoutInSeconds * 1000;
+    #_projectName: string;
+    #_headerNameSession: string;
+    #_headerNameTimestamp: string;
+    #_headerNameSignature: string;
+    #_headerNameSignatureAlgorithm: string;
+
     constructor(accessID: string, privateKey: Uint8Array) {
         this.#_accessID = accessID;
         this.#_privateKey = privateKey;
@@ -352,6 +354,7 @@ export class ChainConnector {
         this.#_timeout = 0;
         this.#_localIP = '';
         this.#_request_timeout = defaultTimeoutInSeconds * 1000;
+        this.setProjectName(defaultProjectName);
     }
 
     get Version() {
@@ -368,6 +371,10 @@ export class ChainConnector {
 
     get LocalIP() {
         return this.#_localIP;
+    }
+
+    get ProjectName(){
+        return this.#_projectName;
     }
 
     set Trace(flag: boolean) {
@@ -423,9 +430,9 @@ export class ChainConnector {
             nonce: this.#_nonce,
         };
         let headers = {};
-        headers[headerNameTimestamp] = timestamp;
-        headers[headerNameSignatureAlgorithm] = signagureAlgorithm;
-        headers[headerNameSignature] = signature;
+        headers[this.#_headerNameTimestamp] = timestamp;
+        headers[this.#_headerNameSignatureAlgorithm] = signagureAlgorithm;
+        headers[this.#_headerNameSignature] = signature;
         let resp = await this.#rawRequest(RequestMethod.POST, '/sessions/', headers, requestData);
         const { session, timeout, address } = (resp as sessionResponse);
         this.#_sessionID = session;
@@ -437,6 +444,14 @@ export class ChainConnector {
             console.log('<Chain-DEBUG> [%s]: local address %s', this.#_sessionID, address);
         }
         return;
+    }
+
+    setProjectName(name: string){
+        this.#_projectName = name;
+        this.#_headerNameSession = name + '-Session';
+        this.#_headerNameTimestamp = name + '-Timestamp';
+        this.#_headerNameSignature = name + '-Signature';
+        this.#_headerNameSignatureAlgorithm = name + '-SignatureAlgorithm';
     }
 
     /**
@@ -1163,10 +1178,10 @@ export class ChainConnector {
             signatureContent.body = CryptoJS.enc.Base64.stringify(hash);
         }
         const signature = await this.#base64Signature(signatureContent);
-        headers[headerNameSession] = this.#_sessionID;
-        headers[headerNameTimestamp] = timestamp;
-        headers[headerNameSignatureAlgorithm] = signatureMethodEd25519;
-        headers[headerNameSignature] = signature;
+        headers[this.#_headerNameSession] = this.#_sessionID;
+        headers[this.#_headerNameTimestamp] = timestamp;
+        headers[this.#_headerNameSignatureAlgorithm] = signatureMethodEd25519;
+        headers[this.#_headerNameSignature] = signature;
         options.headers = headers;
         if (this.#_trace) {
             console.log('<Chain-DEBUG> [%s]: signature payload\n%s', this.#_sessionID, JSON.stringify(signatureContent));

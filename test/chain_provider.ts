@@ -14,6 +14,7 @@ export default class ChainProvider{
         const filePath = path.join(process.cwd(), 'access_key.json');
         const content = await fs.readFile(filePath, 'utf8');
         let conn = NewConnectorFromAccess(JSON.parse(content));
+        // conn.setProjectName("SomeProject");
         if (debug){
             conn.Trace = true;
         }

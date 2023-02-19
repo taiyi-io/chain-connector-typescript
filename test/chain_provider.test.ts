@@ -136,6 +136,9 @@ test('documents', async () => {
         if (totalCount !== records.total) {
             throw new Error('unexpect count ' + records.total + ' => ' + totalCount + ' in case ' + caseName);
         }
+        if (!records.documents){
+            throw new Error("no document available");
+        }
         let recordCount = records.documents.length;
         if (expectResult.length !== recordCount) {
             throw new Error('unexpect result count ' + recordCount + ' => ' + expectResult.length + ' in case ' + caseName);
@@ -355,6 +358,9 @@ test('chain', async () => {
         console.log('previous block: => ' + blockData.previous_block);
         console.log('included transactions: ' + blockData.transactions);
         let transactionRecords = await conn.queryTransactions(blockID, 0, maxRecord);
+        if (!transactionRecords.transactions){
+            throw new Error("no transaction available");
+        }
         console.log(transactionRecords.transactions.length + ' / ' + transactionRecords.total + ' transactions returned');
         for (let transID of transactionRecords.transactions) {
             let transactionData = await conn.getTransaction(blockID, transID);
