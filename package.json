@@ -1,10 +1,11 @@
 {
   "name": "@taiyi-io/chain-connector",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Chain connector SDK",
   "main": "dist/chain_connector.js",
   "types": "dist/chain_connector.d.ts",
   "chain": {
+    "project": "",
     "host": "localhost",
     "port": 9100,
     "debug": false

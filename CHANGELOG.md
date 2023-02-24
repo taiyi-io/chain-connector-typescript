@@ -1,5 +1,11 @@
 # Change Log for Chain SDK
 
+## [0.5.1] - 2023-02-24
+
+### Added
+
+- Add chain.project option to package.json
+
 ## [0.5.0] - 2023-02-19
 
 ### Added
